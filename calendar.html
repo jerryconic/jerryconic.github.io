@@ -177,7 +177,7 @@
 
       <!-- HERO -->
       <div class="hero">
-        <img id="heroImg" src="pics/01.png" alt="月曆主視覺">
+        <img id="heroImg" src="pics/01.jpg" alt="月曆主視覺">
       </div>
 
       <!-- CAL -->
@@ -210,7 +210,7 @@
     const pad = n => String(n).padStart(2,"0");
 
     // 圖片與標題
-    document.getElementById("heroImg").src = `pics/${pad(m)}.png`;
+    document.getElementById("heroImg").src = `pics/${pad(m)}.jpg`;
     document.getElementById("monthTitle").textContent = `${year} 年 ${m} 月`;
 
     // 產生月曆（固定最多 6 週）
