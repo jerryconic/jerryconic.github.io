@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026 收藏月曆（共用模板）</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --screen-hero: 2;
+      --screen-cal: 1;
+
+      --print-hero: 3;
+      --print-cal: 2;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background:#f6f7fb;
+      height: 100%;
+    }
+
+    /* 預設置中 */
+    body{
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    /* === 70% 顯示縮放（screen only） === */
+    .scale-70{
+      zoom: 0.7;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .calendar-wrap{
+      max-width: 980px;
+      /* ✅ 不要固定 100vh，改成內容撐開，避免產生內部捲軸 */
+      height: auto;
+      margin: 24px auto;
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HERO */
+    .hero{
+      position: relative;
+      flex: var(--screen-hero);
+      background: #111;
+      min-height: 300px; /* 稍微拉高，視覺更像月曆 */
+    }
+    .hero img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display:block;
+    }
+
+    /* ✅ 移除 HUD，這裡不需要 hero-hud 相關 CSS */
+
+    /* CALENDAR */
+    .cal-body{
+      flex: var(--screen-cal);
+      padding: 14px 16px 18px;
+      /* ✅ 不要滾動：預設完整顯示 6 週 */
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .cal-head{
+      display:flex;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      align-items: baseline;
+    }
+
+    .month-title{
+      font-weight: 900;
+      font-size: 20px;
+      margin: 0;
+    }
+    .month-note{
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    table.calendar{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 6px;
+    }
+    table.calendar th{
+      text-align:center;
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 800;
+      padding: 4px 0;
+    }
+    .day-cell{
+      /* ✅ 關鍵：把格子高度調小，確保 6 週也完整放得下 */
+      height: 62px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid rgba(15,23,42,.06);
+      padding: 8px;
+      vertical-align: top;
+    }
+    .day-cell.weekend{ background:#f3f4f6; }
+    .day-cell.muted{
+      background:#fff;
+      border:1px dashed rgba(15,23,42,.12);
+    }
+    .day-num{
+      font-weight: 900;
+      font-size: 15px;
+      color: #0f172a;
+    }
+
+    /* === 列印：100% 真實尺寸 === */
+    @media print{
+      @page { size: 45cm 60cm; margin: 0; }
+
+      body{
+        zoom: 1;
+        background:#fff;
+      }
+
+      .scale-70{
+        zoom: 1 !important;
+      }
+
+      .calendar-wrap{
+        width: 45cm;
+        height: 60cm;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .hero{ flex: var(--print-hero); min-height: 0; }
+      .cal-body{ flex: var(--print-cal); overflow: hidden; }
+
+      /* 印刷字體稍微放大（可選） */
+      .month-title{ font-size: 0.75cm; }
+      .month-note{ font-size: 0.42cm; }
+
+      table.calendar{ border-spacing: 0.22cm; }
+      table.calendar th{ font-size: 0.42cm; padding: 0.1cm 0; }
+
+      .day-cell{
+        height: 1.55cm;
+        border-radius: 0.35cm;
+        padding: 0.22cm;
+      }
+      .day-num{ font-size: 0.52cm; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="scale-70">
+    <div class="calendar-wrap">
+
+      <!-- HERO -->
+      <div class="hero">
+        <img id="heroImg" src="pics/01.png" alt="月曆主視覺">
+      </div>
+
+      <!-- CAL -->
+      <div class="cal-body">
+        <div class="cal-head">
+          <p class="month-title" id="monthTitle">2026 年 1 月</p>
+          <p class="month-note">週日為一週起始</p>
+        </div>
+
+        <table class="calendar" aria-label="月曆">
+          <thead>
+            <tr>
+              <th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th>
+            </tr>
+          </thead>
+          <tbody id="calBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const monthEn = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+    const params = new URLSearchParams(location.search);
+    let m = parseInt(params.get("m") || "1",10);
+    if(isNaN(m) || m<1 || m>12) m=1;
+    const year = 2026;
+
+    const pad = n => String(n).padStart(2,"0");
+
+    // 圖片與標題
+    document.getElementById("heroImg").src = `pics/${pad(m)}.png`;
+    document.getElementById("monthTitle").textContent = `${year} 年 ${m} 月`;
+
+    // 產生月曆（固定最多 6 週）
+    const first = new Date(year, m-1, 1);
+    const start = first.getDay();                 // 0=Sun
+    const days = new Date(year, m, 0).getDate();  // days in month
+
+    const tbody = document.getElementById("calBody");
+    tbody.innerHTML = "";
+
+    let d = 1;
+    for(let r=0;r<6;r++){
+      const tr = document.createElement("tr");
+      for(let c=0;c<7;c++){
+        const td = document.createElement("td");
+        td.className = "day-cell";
+
+        // 前置空格 or 結尾空格
+        if ((r===0 && c<start) || d>days){
+          td.classList.add("muted");
+        } else {
+          if(c===0 || c===6) td.classList.add("weekend");
+          td.innerHTML = `<span class="day-num">${d}</span>`;
+          d++;
+        }
+
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+
+      // 若已超過天數，仍然保留剩餘列為空格（6週固定）可讓版面一致
+      // 所以不 break
+    }
+  </script>
+</body>
+</html>
